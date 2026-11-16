@@ -1,0 +1,100 @@
+<main *ngIf="!authenticated" class="ic-access">
+  <a class="brand" routerLink="/"><span class="brand-icon">IC</span><span>inti<span class="brand-light">crunch</span><small>EL FUEGO QUE NOS UNE</small></span></a>
+  <div class="ic-access-card"><span class="ic-kicker">PORTAL DE EQUIPO</span><h1>Tu turno<br>empieza aquí.</h1><p>Entra con tu DNI y tu contraseña de colaborador.</p><button class="ic-primary" (click)="login()">Iniciar sesión →</button><a routerLink="/">Volver a la carta</a><p *ngIf="auth.authenticated" class="ic-alert">Tu cuenta es de cliente; no tiene acceso a la gestión del local.</p></div>
+</main>
+<main *ngIf="authenticated" class="ops-shell">
+  <aside class="ops-sidebar" [class.expanded]="sidebarOpen">
+    <a class="brand" routerLink="/"><span class="brand-icon">IC</span><span>inti<span class="brand-light">crunch</span><small>GESTIÓN CON BUEN FUEGO</small></span></a>
+    <div class="ops-location"><span class="ops-location-icon">⌂</span><div><strong>La Rinconada</strong><small>Juliaca · Puno</small></div><span class="ic-dot"></span></div>
+    <span class="ic-kicker ops-nav-label">TU LOCAL, CONECTADO</span>
+    <nav aria-label="Módulos de gestión"><a *ngFor="let module of allowed" [routerLink]="['/gestion',module.slug]" [class.active]="active.slug===module.slug" (click)="sidebarOpen=false"><span>{{module.icon}}</span>{{module.label}}<i *ngIf="active.slug===module.slug">›</i></a></nav>
+    <div class="ops-sidebar-bottom"><div class="ops-demo-card"><span>✳</span><div><b>Modo demostración</b><small>Pagos simulados · PDF real</small></div></div><a routerLink="/" class="ops-public-link">Ver la carta pública <span>↗</span></a><div class="ops-profile"><span class="ops-avatar">{{auth.initials}}</span><div class="ops-profile-link" (click)="auth.openHistory()" title="Ver mi historial"><b>{{auth.displayName}}</b><small class="ops-role">{{auth.roleLabel}}</small></div><button aria-label="Cerrar sesión" title="Cerrar sesión" (click)="logout()">⎋</button></div></div>
+  </aside>
+  <section class="ops-main">
+    <header class="ops-topbar"><div><button class="ops-menu-toggle" aria-label="Mostrar módulos" (click)="sidebarOpen=!sidebarOpen">☰</button><span class="ops-breadcrumb">Inti Crunch <span>/</span> {{active.label}}</span></div><div class="ops-top-meta"><button class="ops-whoami" (click)="auth.openHistory()" title="Ver mi historial">{{auth.displayName}} · <b>{{auth.roleLabel}}</b> · <u>Mi historial</u></button><button class="ic-secondary small" (click)="load();loadLookups()" [disabled]="loading||busy">↻ Actualizar</button></div></header>
+    <div class="ops-content">
+      <header class="ops-page-head"><div><span class="ic-kicker">{{today}}</span><h1>{{active.slug==='resumen'?'El turno va con':active.label}}<em *ngIf="active.slug==='resumen'"> buen fuego.</em></h1><p>{{active.description}}</p></div><button class="ic-primary big-action" *ngIf="canCreate" (click)="create()">＋ {{view?.createLabel || view?.form?.title}}</button></header>
+      <p *ngIf="error" class="ic-alert error" role="alert">{{error}} <button *ngIf="error.includes('sesión')" class="ic-text-button" (click)="login()">Iniciar sesión</button><button aria-label="Cerrar aviso" class="alert-close" (click)="error=''">×</button></p>
+      <p *ngIf="notice" class="ic-alert success" role="status">✓ {{notice}}<button aria-label="Cerrar aviso" class="alert-close" (click)="notice=''">×</button></p>
+      <div *ngIf="loading" class="ops-loading" role="status"><span></span> Cargando…</div>
+
+      <ng-container *ngIf="active.slug==='resumen'">
+        <ng-container *ngIf="dashboard as data">
+          <section class="earnings-panel ops-panel" *ngIf="roles.includes('ADMINISTRADOR') && data['ganancias'] as gains">
+            <header><div><span class="ic-kicker">SOLO PARA ADMINISTRACIÓN</span><h2>Ganancias del negocio</h2><p>Dinero cobrado menos devoluciones.</p></div></header>
+            <div class="earnings-cards"><article><span>GANANCIAS TOTALES</span><strong>{{money(gains['total'])}}</strong><small>Desde que se abrió el sistema · {{gains['pedidosCompletados']}} pedidos entregados</small></article><article class="accent"><span>GANANCIAS DE ESTE MES</span><strong>{{money(gains['mensual'])}}</strong><small>Desde el día 1 hasta hoy</small></article></div>
+            <div class="earnings-chart" aria-label="Ganancias por mes"><div class="bar" *ngFor="let bar of monthBars()" [title]="bar.label+': '+money(bar.total)"><b>{{bar.total ? money(bar.total) : ''}}</b><i [style.height.%]="bar.percent"></i><span>{{bar.label}}</span></div></div>
+          </section>
+          <section class="ops-metrics" aria-label="Resumen del día">
+            <article><div><span>COBRADO HOY</span><i>↗</i></div><strong>{{money(data['metricas']['ventasHoy'])}}</strong><small>Pagos de hoy</small></article>
+            <article><div><span>PEDIDOS EN CURSO</span><i>♨</i></div><strong>{{data['metricas']['pedidosActivos']}}</strong><small>{{data['metricas']['pedidosListos']}} listos para entregar</small></article>
+            <article><div><span>GASTO PROMEDIO</span><i>◈</i></div><strong>{{money(data['metricas']['ticketPromedio'])}}</strong><small>Por pedido de hoy</small></article>
+            <article><div><span>TIEMPO DE COCINA</span><i>◷</i></div><strong>{{data['metricas']['minutosPreparacion'] | number:'1.0-0'}} <small>min</small></strong><small>Promedio de hoy</small></article>
+          </section>
+          <div class="ops-dashboard-grid">
+            <section class="ops-panel"><header><div><h2>Pedidos en curso</h2><p>Lo que se está atendiendo hoy</p></div><a *ngIf="has(['ADMINISTRADOR','SUPERVISOR','CAJERO','OPERACIONES'])" routerLink="/gestion/ventas">Ver pedidos ↗</a></header><div class="ops-live-order" *ngFor="let order of data['pedidos']"><span class="ops-order-number">N° {{order.number}}</span><div><b>{{order.customerName}}</b><small>{{order.detalle}}</small></div><span class="ic-badge" [ngClass]="statusClass(order.status)">{{format(order.status)}}</span><strong>{{money(order.total)}}</strong></div><div class="ic-empty compact" *ngIf="!data['pedidos'].length"><span>♨</span><h3>Todo al día.</h3><p>Los pedidos activos aparecerán aquí.</p></div></section>
+            <section class="ops-panel"><header><div><h2>¿Cómo nos piden?</h2><p>Pedidos de hoy por tipo de atención</p></div><b class="ops-count">{{data['metricas']['pedidosHoy']}}</b></header><div class="ops-channel" *ngFor="let channel of ['DINE_IN','DELIVERY','PICKUP','TAKEAWAY'];let index=index"><div><span>{{format(channel)}}</span><b>{{channelCount(channel)}}</b></div><div class="ops-channel-track"><i [style.width.%]="channelPercent(channel)" [class]="'channel-'+index"></i></div></div></section>
+          </div>
+          <section class="ops-panel ops-stock-alert"><header><div><h2>Se está acabando</h2><p>Insumos que llegaron al mínimo</p></div><a *ngIf="has(['ADMINISTRADOR','SUPERVISOR','OPERACIONES','ABASTECIMIENTO'])" routerLink="/gestion/inventario">Ver inventario ↗</a></header><div class="ops-stock-items"><article *ngFor="let ingredient of data['insumosBajos']"><span>↘</span><div><b>{{ingredient.insumo}}</b><small>Mínimo: {{ingredient.minimo}}</small></div><strong>{{ingredient.cantidad}}</strong></article></div><p *ngIf="!data['insumosBajos'].length" class="ic-help">Todo bien: no hay insumos por acabarse.</p></section>
+        </ng-container>
+      </ng-container>
+
+      <ng-container *ngIf="active.slug!=='resumen'">
+        <nav class="ops-tabs" aria-label="Secciones del módulo"><button *ngFor="let item of views" [class.active]="view?.key===item.key" (click)="selectView(item)">{{item.label}}</button></nav>
+        <div class="view-help" *ngIf="view && view.help && showHelp"><span>💡</span><p>{{view.help}}</p><button class="ic-text-button" (click)="showHelp=false">Entendido</button></div>
+
+        <!-- Plano de mesas -->
+        <section class="ops-panel floor-panel" *ngIf="isFloor">
+          <header class="floor-head"><div><h2>Plano del salón</h2><p>{{updated ? 'Actualizado '+(updated | date:'HH:mm') : ''}}</p></div><div class="floor-legend"><span class="free">● {{floorCount('LIBRE')}} libres</span><span class="reserved">● {{floorCount('RESERVADA')}} reservadas</span><span class="busy">● {{floorCount('OCUPADA')}} con clientes</span></div></header>
+          <ng-container *ngFor="let area of floorAreas()">
+            <h3 class="floor-area">{{area}}</h3>
+            <div class="floor-grid">
+              <article class="floor-table" *ngFor="let table of tablesIn(area)" [ngClass]="table.state.toLowerCase()" [class.has-ready]="readyOrders(table)>0">
+                <header><div class="floor-shape" [class.big]="table.capacity>4"><b>{{table.code}}</b></div><div><span class="floor-state">{{format(table.state)}}</span><small>{{table.capacity}} personas</small></div></header>
+                <p class="floor-who" *ngIf="table.visit">👥 {{table.visit['guest']}} · {{table.visit['partySize']}} pers. · desde {{timeOf(table.visit['arrivedAt'])}}</p>
+                <p class="floor-who reserved" *ngIf="table.reservation && table.state!=='OCUPADA'">📅 {{table.reservation['guest']}} · {{table.reservation['partySize']}} pers. · {{timeOf(table.reservation['startsAt'])}}<small *ngIf="table.reservation['notes']">“{{table.reservation['notes']}}”</small></p>
+                <div class="floor-orders" *ngIf="table.orders.length">
+                  <div class="floor-order" *ngFor="let order of table.orders" [ngClass]="order['status'].toLowerCase()">
+                    <div class="floor-order-head"><b>Pedido N° {{order['number']}}</b><span class="ic-badge" [ngClass]="statusClass(order['status'])">{{order['status']==='READY'?'¡Listo para servir!':format(order['status'])}}</span></div>
+                    <ul><li *ngFor="let line of order['lines']">{{line}}</li></ul>
+                    <div class="floor-order-foot"><span>{{money(order['total'])}}<em *ngIf="order['balance']>0"> · falta {{money(order['balance'])}}</em></span>
+                      <button *ngIf="order['status']==='READY'" class="ic-primary small" [disabled]="busy" (click)="serve(order)">{{order['balance']>0?'Cobrar':'Servido ✓'}}</button>
+                      <button *ngIf="order['status']!=='READY' && order['balance']>0 && has(['ADMINISTRADOR','SUPERVISOR','CAJERO'])" class="ic-secondary small" [disabled]="busy" (click)="payOrder(order)">Cobrar</button>
+                      <button *ngIf="['RECEIVED','PREPARING'].includes(order['status']) && has(['ADMINISTRADOR','SUPERVISOR','OPERACIONES'])" class="ic-secondary small" [disabled]="busy" (click)="advanceOrder(order)">{{order['status']==='RECEIVED'?'Empezar':'Marcar listo'}}</button></div>
+                  </div>
+                </div>
+                <div class="floor-actions">
+                  <button *ngIf="table.state==='LIBRE'" class="ic-primary small" [disabled]="busy" (click)="seat(table)">Sentar clientes</button>
+                  <button *ngIf="table.state==='RESERVADA'" class="ic-primary small" [disabled]="busy" (click)="arrived(table)">Llegaron</button>
+                  <button class="ic-secondary small" [disabled]="busy" (click)="takeOrder(table)">＋ Pedido</button>
+                  <button *ngIf="table.state==='OCUPADA'" class="ic-secondary small" [disabled]="busy" (click)="freeTable(table)">Se fueron · liberar</button>
+                  <span class="floor-manage" *ngIf="has(['ADMINISTRADOR','SUPERVISOR','OPERACIONES'])"><button class="ic-text-button" (click)="editTable(table)">Editar</button><button *ngIf="has(['ADMINISTRADOR','SUPERVISOR'])" class="ic-text-button danger" (click)="deleteTable(table)">Quitar</button></span>
+                </div>
+              </article>
+            </div>
+          </ng-container>
+          <div class="ic-empty" *ngIf="!floor.length && !loading"><span>▦</span><h3>Aún no hay mesas</h3><p>Usa "Nueva mesa" para dibujar tu salón.</p></div>
+        </section>
+
+        <!-- Calendario de reservas -->
+        <section class="reservation-calendar ops-panel" *ngIf="active.slug==='reservas'&&view?.key==='reservations'">
+          <header class="reservation-calendar-head"><div><span class="ic-kicker">AGENDA DEL LOCAL</span><h2>{{weekTitle}}</h2><p>{{activeReservations().length}} reservas activas · toca para reservar</p></div><div class="calendar-controls"><button class="ic-secondary small" aria-label="Semana anterior" (click)="changeWeek(-1)">‹</button><button class="ic-secondary small" (click)="goToCurrentWeek()">Hoy</button><button class="ic-secondary small" aria-label="Semana siguiente" (click)="changeWeek(1)">›</button></div></header>
+          <div class="calendar-scroll"><div class="calendar-week-grid"><div class="calendar-time-column"><div class="calendar-corner">Hora</div><div class="calendar-hour-label" *ngFor="let hour of weekHours">{{hour===12?'12 p. m.':hour>12?(hour-12)+' p. m.':hour+' a. m.'}}</div></div><section class="calendar-day-column" *ngFor="let day of weekDays"><header class="calendar-day-head" [class.today]="sameDay(day,todayDate)"><span>{{dayLabel(day)}}</span><b>{{dateLabel(day)}}</b></header><div class="calendar-day-track"><button class="calendar-add-slot" *ngFor="let hour of weekHours;let i=index" [style.top.px]="i*58" [attr.aria-label]="'Reservar el '+dayLabel(day)+' a las '+hour+':00'" (click)="createReservationAt(day,hour)"></button><article class="calendar-reservation" *ngFor="let row of reservationsOn(day)" [class.arrived]="eventStatus(row)==='arrived'" [style.top.px]="eventTop(row)" [style.height.px]="eventHeight(row)" [title]="row['Cliente']+' · '+eventTime(row)"><span>{{eventTime(row)}}</span><b>{{row['Cliente']}}</b><small>{{row['Personas']}} personas · {{row['Mesas']}}</small></article></div></section></div></div>
+          <footer class="calendar-legend"><span><i></i> Reservada</span><span><i></i> Llegaron</span></footer>
+        </section>
+
+        <!-- Tabla -->
+        <section class="ops-panel ops-data-panel" *ngIf="!isFloor">
+          <header><div><h2>{{view?.label}} <span class="ops-count">{{filtered.length}}</span></h2><p>{{updated ? 'Actualizado '+(updated | date:'HH:mm:ss') : 'Sin actualización'}}</p></div><div class="ops-data-tools"><label class="ops-search"><span>⌕</span><input type="search" aria-label="Buscar" placeholder="Buscar…" [value]="search" (input)="search=$any($event.target).value;page=1"></label><select *ngIf="statuses.length>1" aria-label="Filtrar por estado" [value]="statusFilter" (change)="statusFilter=$any($event.target).value;page=1"><option value="">Todos los estados</option><option *ngFor="let status of statuses" [value]="status">{{format(status)}}</option></select><button class="ic-secondary small" (click)="newestFirst=!newestFirst;page=1" [title]="newestFirst?'Ahora ves primero los más nuevos':'Ahora ves primero el N° 1'">{{newestFirst?'↓ Más nuevos primero':'↑ Desde el N° 1'}}</button></div></header>
+          <div class="ic-table-scroll" *ngIf="filtered.length"><table class="ic-table"><thead><tr><th *ngFor="let column of columns">{{column}}</th><th>Acciones</th></tr></thead><tbody><tr *ngFor="let row of paged"><td *ngFor="let column of columns" [class.num-cell]="column==='N°'" [class.long-cell]="format(row[column],column).length>34"><span *ngIf="column==='Estado';else value" class="ic-badge" [ngClass]="statusClass(row[column])">{{format(row[column],column)}}</span><ng-template #value>{{format(row[column],column)}}</ng-template></td><td class="ic-row-actions"><button *ngFor="let action of actions(row)" [class]="action.main?'row-main':'ic-text-button'" [class.danger]="action.danger" [disabled]="busy" (click)="act(action.key,row)">{{action.label}}</button><span *ngIf="!actions(row).length" class="ic-help">—</span></td></tr></tbody></table></div>
+          <div *ngIf="!filtered.length&&!loading" class="ic-empty"><span>{{search||statusFilter?'⌕':'✳'}}</span><h3>{{error?'No pudimos cargar esta sección':search||statusFilter?'No encontramos coincidencias':'Todavía no hay nada aquí'}}</h3><p>{{search||statusFilter?'Prueba con otra palabra o quita el filtro.':(canCreate?'Toca el botón naranja de arriba para agregar el primero.':'Cuando haya registros aparecerán aquí.')}}</p><button *ngIf="search||statusFilter" class="ic-secondary" (click)="resetFilter()">Quitar filtros</button></div>
+          <div class="ops-pagination" *ngIf="filtered.length"><span>{{filtered.length}} registros · página {{page}} de {{pages}}</span><div><button aria-label="Página anterior" [disabled]="page===1" (click)="page=page-1">←</button><button aria-label="Página siguiente" [disabled]="page===pages" (click)="page=page+1">→</button></div></div>
+        </section>
+      </ng-container>
+      <div class="ops-footer"><span>Inti Crunch · Urb. La Rinconada, Juliaca</span><span>Hecho para compartir. Gestionado con cuidado.</span></div>
+    </div>
+  </section>
+</main>
+<ic-form-dialog *ngIf="form" [spec]="form" [lookups]="lookups" [busy]="busy" [error]="formError" (closed)="form=undefined;formError=''" (saved)="save($event)"></ic-form-dialog>
+<div class="ic-overlay" *ngIf="detailTitle" (click)="detailTitle=''"><section class="ic-dialog wide" role="dialog" aria-modal="true" [attr.aria-label]="detailTitle" (click)="$event.stopPropagation()"><header class="ic-dialog-head"><div><span class="ic-kicker">DETALLE</span><h2>{{detailTitle}}</h2></div><button class="ic-close" aria-label="Cerrar detalle" (click)="detailTitle=''">×</button></header><section *ngFor="let detail of details" class="ops-detail-section"><h3>{{detail.title}}</h3><div class="ic-table-scroll" *ngIf="detail.rows.length"><table class="ic-table"><thead><tr><th *ngFor="let column of detailColumns(detail.rows)">{{column}}</th></tr></thead><tbody><tr *ngFor="let row of detail.rows"><td *ngFor="let column of detailColumns(detail.rows)">{{format(row[column],column)}}</td></tr></tbody></table></div><p *ngIf="!detail.rows.length" class="ic-help">No hay registros.</p></section></section></div>
+<div class="ic-overlay" *ngIf="confirmation"><section class="ic-dialog small" role="dialog" aria-modal="true" aria-label="Confirmar"><div class="ic-dialog-head"><h2>¿Seguro?</h2></div><p>{{confirmation.message}}</p><div class="ic-dialog-footer"><button class="ic-secondary" [disabled]="busy" (click)="confirmation=undefined">No, volver</button><button class="ic-primary" [disabled]="busy" (click)="confirmation.run()">{{busy?'Procesando…':'Sí, continuar'}}</button></div></section></div>

@@ -1,0 +1,20 @@
+# Keycloak (inicio de sesión) para una PC nueva. Los datos del negocio NO van aquí: van en Oracle.
+# Uso:  docker compose up -d
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    # start-dev guarda los usuarios de Keycloak en un archivo interno (volumen keycloak-datos).
+    # --import-realm crea la primera vez el realm "inti-crunch" con sus roles y las cuentas demo.
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin_dev_only
+      KC_HOSTNAME: http://localhost:${KC_PORT:-8180}
+    ports:
+      - "127.0.0.1:${KC_PORT:-8180}:8080"
+    volumes:
+      - ./infra/keycloak/inti-crunch-realm.json:/opt/keycloak/data/import/inti-crunch-realm.json:ro
+      - keycloak-datos:/opt/keycloak/data
+
+volumes:
+  keycloak-datos:

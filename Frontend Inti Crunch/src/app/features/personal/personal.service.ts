@@ -1,0 +1,2 @@
+import { Injectable,inject } from '@angular/core'; import { ApiService } from '../../core/api/api.service';
+@Injectable({providedIn:'root'}) export class PersonalService { private api=inject(ApiService); colaboradores(){return this.api.get<any[]>('/admin/staff');} turnos(){return this.api.get<any[]>('/admin/staff/shifts');} crear(path:string,data:unknown){return this.api.post(path,data);} marcacion(shift:number,employee:number,action:'IN'|'OUT'){return this.api.patch(`/admin/staff/shifts/${shift}/employees/${employee}/attendance`,{action});} }

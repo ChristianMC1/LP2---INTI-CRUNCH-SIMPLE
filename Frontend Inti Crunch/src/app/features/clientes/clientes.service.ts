@@ -1,0 +1,2 @@
+import { Injectable,inject } from '@angular/core'; import { ApiService } from '../../core/api/api.service';
+@Injectable({providedIn:'root'}) export class ClientesService { private api=inject(ApiService); clientes(){return this.api.get<any[]>('/admin/customers');} promociones(){return this.api.get<any[]>('/admin/promotions');} crearCliente(data:unknown){return this.api.post('/admin/customers',data);} crearPromocion(data:unknown){return this.api.post('/admin/promotions',data);} redimir(data:unknown){return this.api.post('/admin/promotions/redeem',data);} }

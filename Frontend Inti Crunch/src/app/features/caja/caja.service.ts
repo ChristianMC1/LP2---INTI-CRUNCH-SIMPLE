@@ -1,0 +1,2 @@
+import { Injectable,inject } from '@angular/core'; import { ApiService } from '../../core/api/api.service';
+@Injectable({providedIn:'root'}) export class CajaService { private api=inject(ApiService); sesiones(){return this.api.get<any[]>('/admin/cash/sessions');} pagos(){return this.api.get<any[]>('/admin/cash/payments');} abrir(data:unknown){return this.api.post('/admin/cash/sessions',data);} cobrar(data:unknown){return this.api.post('/admin/cash/payments',data);} cerrar(id:number,data:unknown){return this.api.patch(`/admin/cash/sessions/${id}/close`,data);} }

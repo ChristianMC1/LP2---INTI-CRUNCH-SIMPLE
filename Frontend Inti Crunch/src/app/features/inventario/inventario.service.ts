@@ -1,0 +1,2 @@
+import { Injectable,inject } from '@angular/core'; import { ApiService } from '../../core/api/api.service';
+@Injectable({providedIn:'root'}) export class InventarioService { private api=inject(ApiService); insumos(){return this.api.get<any[]>('/admin/inventory/ingredients');} movimientos(){return this.api.get<any[]>('/admin/inventory/movements');} recetas(){return this.api.get<any[]>('/admin/inventory/recipes');} produccion(){return this.api.get<any[]>('/admin/inventory/production');} registrar(path:string,data:unknown){return this.api.post(path,data);} }

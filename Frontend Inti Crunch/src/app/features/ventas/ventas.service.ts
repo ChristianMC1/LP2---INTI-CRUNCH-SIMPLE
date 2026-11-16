@@ -1,0 +1,2 @@
+import { Injectable,inject } from '@angular/core'; import { ApiService } from '../../core/api/api.service';
+@Injectable({providedIn:'root'}) export class VentasService { private api=inject(ApiService); pedidos(){return this.api.get<any[]>('/orders');} crear(data:unknown){return this.api.post('/orders/public',data);} estado(id:number,status:string){return this.api.patch(`/orders/${id}/status`,{status});} cancelar(id:number){return this.api.patch(`/orders/${id}/cancel`);} }
