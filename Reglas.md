@@ -1,5 +1,7 @@
 # Guía: cómo agregar, cambiar o quitar una regla de negocio
 
+> **41 reglas listas para copiar** (pedidos, caja, carta, clientes, inventario, compras, personal, reservas y delivery): [BANCO-DE-REGLAS.md](BANCO-DE-REGLAS.md)
+
 Una **regla de negocio** es una condición que el sistema exige antes de guardar algo.
 Ejemplos: "no se puede cobrar un pedido cancelado" o "el DNI debe tener 8 números".
 Si la condición no se cumple, el sistema **no guarda** y muestra un mensaje en la pantalla.
@@ -101,7 +103,7 @@ Hay tres formas, de la más fácil a la más completa. Todas en `module-config.t
 justo después de `int quantity = integer(detail.get("quantity"), "Cantidad");`:
 
 ```java
-// REGLA PEDIDOS-04: máximo 20 unidades de un mismo producto.
+// REGLA NUEVA-01: máximo 20 unidades de un mismo producto.
 if (quantity > 20) throw new IllegalArgumentException("Máximo 20 unidades por producto.");
 ```
 
@@ -120,7 +122,7 @@ responde con el mensaje y la pantalla lo muestra.
 
 ```java
 BigDecimal fondo = money(data.get("openingAmount"), "Fondo inicial");
-// REGLA CAJA-21: la caja se abre con al menos S/ 50.
+// REGLA NUEVA-09: la caja se abre con al menos S/ 50.
 if (fondo.compareTo(new BigDecimal("50")) < 0) throw new IllegalArgumentException("La caja se abre con al menos S/ 50.");
 ```
 
@@ -137,7 +139,7 @@ La cantidad de personas se lee en tres métodos de `reservas/service/ReservaServ
 Para no repetir, crea un método y llámalo en las tres:
 
 ```java
-/** REGLA RESERVAS-20: una reserva es para 10 personas como máximo. */
+/** REGLA NUEVA-34: una reserva es para 10 personas como máximo. */
 private static void validarPersonas(int guests) {
     if (guests > 10) throw new IllegalArgumentException("Las reservas son para 10 personas como máximo.");
 }
@@ -184,7 +186,7 @@ Ejemplo: "cada proveedor debe tener un nombre de contacto".
    ```
 3. **Service** `compras/service/ComprasService.java`, en `createSupplier` y `updateSupplier`:
    ```java
-   // REGLA COMPRAS-30: el proveedor debe tener un contacto.
+   // REGLA NUEVA-42: el proveedor debe tener un contacto.
    s.setContactName(str(data, "contactName"));   // str(...) ya exige que no esté vacío
    ```
    y en `suppliers()` agrega la columna a la tabla: `"Contacto", s.getContactName()`.

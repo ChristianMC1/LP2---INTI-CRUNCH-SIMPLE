@@ -4,7 +4,8 @@ Misma aplicación y mismo diseño que el proyecto original, con el backend reduc
 **solo Oracle**, sin Swagger, sin PostgreSQL, sin scripts de migración ni pruebas automáticas.
 Cada regla de negocio está marcada en el código con `// REGLA ...`.
 
-- **Guía para agregar, cambiar o quitar reglas:** [GUIA-REGLAS-DE-NEGOCIO.md](GUIA-REGLAS-DE-NEGOCIO.md)
+- **Guía para agregar, cambiar o quitar reglas:** [Reglas.md](Reglas.md)
+- **41 reglas que puede pedir el docente, listas para copiar:** [BANCO-DE-REGLAS.md](BANCO-DE-REGLAS.md)
 - **Lista de todas las reglas:** [Backend Inti Crunch/REGLAS.md](<Backend Inti Crunch/REGLAS.md>)
 - **Instalar en otra PC (clonando desde GitHub):** [INSTALAR-EN-OTRA-PC.md](INSTALAR-EN-OTRA-PC.md)
 
