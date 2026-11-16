@@ -28,11 +28,18 @@ for ($i = 0; $i -lt 60; $i++) {
 }
 if (-not $listo) { throw 'Keycloak no responde en el puerto 8180. Revisa Docker Desktop.' }
 
-# 2. Clave de Oracle (no se guarda en ningun archivo).
+# 2. Base de Oracle: XEPDB1 (Oracle XE 21c) o FREEPDB1 (Oracle Free 23ai/26ai), se detecta sola.
+. (Join-Path $PSScriptRoot 'infra\oracle\base-oracle.ps1')
+if (-not $env:ORACLE_DATABASE_URL) {
+    $env:ORACLE_DATABASE_URL = 'jdbc:oracle:thin:@//localhost:1521/' + (Obtener-BaseOracle)
+}
+Write-Host "Oracle: $env:ORACLE_DATABASE_URL"
+
+# 3. Clave de Oracle (no se guarda en ningun archivo).
 $clave = Read-Host 'Clave de INTICRUNCH_ORACLE' -AsSecureString
 $env:ORACLE_DATABASE_PASSWORD = (New-Object System.Management.Automation.PSCredential('x', $clave)).GetNetworkCredential().Password
 
-# 3. Compilar y ejecutar.
+# 4. Compilar y ejecutar.
 mvn -q -DskipTests package
 if ($LASTEXITCODE -ne 0) { throw 'No se pudo compilar el backend.' }
 Write-Host 'Iniciando backend en http://localhost:8080/api/v1  (para detener: Ctrl+C)'

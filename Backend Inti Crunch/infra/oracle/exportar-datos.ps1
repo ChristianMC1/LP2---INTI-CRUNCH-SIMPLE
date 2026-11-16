@@ -3,7 +3,9 @@
 # No pide clave: crea un usuario temporal IC_COPIA (clave aleatoria), exporta con el y lo borra al final.
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
-$env:ORACLE_SID = 'XE'
+. (Join-Path $PSScriptRoot 'base-oracle.ps1')
+$base = Obtener-BaseOracle   # XEPDB1 (Oracle XE) o FREEPDB1 (Oracle Free)
+Write-Host "Base de trabajo de Oracle: $base"
 $clave = 'Ic' + [guid]::NewGuid().ToString('N').Substring(0, 24)
 
 function Ejecutar-ComoAdmin([string]$sql) {
@@ -15,7 +17,7 @@ function Ejecutar-ComoAdmin([string]$sql) {
 # 1. Usuario temporal para exportar y carpeta donde Oracle deja el archivo.
 $salida = Ejecutar-ComoAdmin @"
 SET HEADING OFF FEEDBACK OFF PAGESIZE 0 LINESIZE 400
-ALTER SESSION SET CONTAINER = XEPDB1;
+ALTER SESSION SET CONTAINER = $base;
 BEGIN EXECUTE IMMEDIATE 'DROP USER IC_COPIA CASCADE'; EXCEPTION WHEN OTHERS THEN NULL; END;
 /
 CREATE USER IC_COPIA IDENTIFIED BY "$clave" DEFAULT TABLESPACE USERS QUOTA UNLIMITED ON USERS;
@@ -31,7 +33,7 @@ $parametros = Join-Path $env:TEMP 'inticrunch-exportar.par'
 try {
     # 2. Exportar el esquema completo.
     @(
-        "userid=IC_COPIA/$clave@localhost:1521/XEPDB1",
+        "userid=IC_COPIA/$clave@localhost:1521/$base",
         'schemas=INTICRUNCH_ORACLE',
         'directory=DATA_PUMP_DIR',
         'dumpfile=inticrunch.dmp',
@@ -47,5 +49,5 @@ try {
     Write-Host 'Listo: infra\oracle\datos\inticrunch.dmp (subelo a GitHub con git add / commit / push).'
 } finally {
     Remove-Item $parametros -ErrorAction SilentlyContinue
-    Ejecutar-ComoAdmin "ALTER SESSION SET CONTAINER = XEPDB1;`nDROP USER IC_COPIA CASCADE;`nEXIT;" | Out-Null
+    Ejecutar-ComoAdmin "ALTER SESSION SET CONTAINER = $base;`nDROP USER IC_COPIA CASCADE;`nEXIT;" | Out-Null
 }

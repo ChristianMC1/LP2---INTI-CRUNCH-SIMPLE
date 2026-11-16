@@ -4,7 +4,9 @@
 # No pide clave: crea un usuario temporal IC_COPIA (clave aleatoria), importa con el y lo borra al final.
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
-$env:ORACLE_SID = 'XE'
+. (Join-Path $PSScriptRoot 'base-oracle.ps1')
+$base = Obtener-BaseOracle   # XEPDB1 (Oracle XE) o FREEPDB1 (Oracle Free)
+Write-Host "Base de trabajo de Oracle: $base"
 $archivo = Join-Path $PSScriptRoot 'datos\inticrunch.dmp'
 if (-not (Test-Path $archivo)) { throw 'No existe datos\inticrunch.dmp' }
 $clave = 'Ic' + [guid]::NewGuid().ToString('N').Substring(0, 24)
@@ -18,7 +20,7 @@ function Ejecutar-ComoAdmin([string]$sql) {
 # 1. Usuario temporal para importar y copia del archivo a la carpeta de Oracle.
 $salida = Ejecutar-ComoAdmin @"
 SET HEADING OFF FEEDBACK OFF PAGESIZE 0 LINESIZE 400
-ALTER SESSION SET CONTAINER = XEPDB1;
+ALTER SESSION SET CONTAINER = $base;
 BEGIN EXECUTE IMMEDIATE 'DROP USER IC_COPIA CASCADE'; EXCEPTION WHEN OTHERS THEN NULL; END;
 /
 CREATE USER IC_COPIA IDENTIFIED BY "$clave" DEFAULT TABLESPACE USERS QUOTA UNLIMITED ON USERS;
@@ -36,7 +38,7 @@ $parametros = Join-Path $env:TEMP 'inticrunch-importar.par'
 try {
     # 2. Importar. El aviso "ORA-31684 ... INTICRUNCH_ORACLE already exists" es normal: el usuario ya lo creaste.
     @(
-        "userid=IC_COPIA/$clave@localhost:1521/XEPDB1",
+        "userid=IC_COPIA/$clave@localhost:1521/$base",
         'schemas=INTICRUNCH_ORACLE',
         'directory=DATA_PUMP_DIR',
         'dumpfile=inticrunch.dmp',
@@ -46,5 +48,5 @@ try {
     Write-Host 'Importacion terminada. Si el unico error fue ORA-31684 (el usuario ya existe), todo esta bien.'
 } finally {
     Remove-Item $parametros -ErrorAction SilentlyContinue
-    Ejecutar-ComoAdmin "ALTER SESSION SET CONTAINER = XEPDB1;`nDROP USER IC_COPIA CASCADE;`nEXIT;" | Out-Null
+    Ejecutar-ComoAdmin "ALTER SESSION SET CONTAINER = $base;`nDROP USER IC_COPIA CASCADE;`nEXIT;" | Out-Null
 }

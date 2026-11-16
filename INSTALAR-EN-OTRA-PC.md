@@ -22,8 +22,14 @@ Para revisar que quedaron instalados, abre PowerShell y ejecuta `java -version`,
 
 ## 2. Base de datos Oracle
 
-Al instalar **Oracle XE 21c** te pide una clave para el administrador (SYS). Anótala.
-La instalación crea la base **XE** y, dentro de ella, la base de trabajo **XEPDB1**: ahí van las tablas de Inti Crunch.
+Sirve **cualquiera** de estas dos versiones (los scripts detectan solos cuál tienes):
+
+| Oracle instalado | Base raíz | Base de trabajo (aquí van las tablas) |
+|---|---|---|
+| Oracle Database **XE 21c** | XE | **XEPDB1** |
+| Oracle Database **Free 23ai / 26ai** | FREE | **FREEPDB1** |
+
+Al instalar te pide una clave para el administrador (SYS). Anótala.
 
 ### 2.1 Comprobar que Oracle está escuchando
 
@@ -31,7 +37,9 @@ La instalación crea la base **XE** y, dentro de ella, la base de trabajo **XEPD
 lsnrctl status
 ```
 
-Debe aparecer `El servicio "xepdb1" tiene 1 instancia(s)`. Si **no** aparece (error ORA-12514 al iniciar el backend):
+Si aparece `El servicio "xepdb1"` **o** `El servicio "freepdb1"` (con estado READY), **todo está bien: pasa al 2.2**.
+
+Solo si **no** aparece (o el backend muestra el error ORA-12514):
 
 ```powershell
 sqlplus / as sysdba
@@ -42,21 +50,21 @@ ALTER SYSTEM REGISTER;
 EXIT;
 ```
 
-Si el servicio `OracleOraDB21Home1TNSListener` está detenido, inícialo en PowerShell **como administrador**:
-`Start-Service OracleOraDB21Home1TNSListener`.
+Si `lsnrctl status` dice que no hay listener, inicia su servicio en PowerShell **como administrador**.
+El nombre cambia según la versión; para verlo: `Get-Service *TNSListener*`, y luego `Start-Service <ese nombre>`.
 
 > **Ojo:** si Docker tiene otro Oracle usando el puerto 1521 (por ejemplo de otro curso), detenlo con `docker stop <nombre>`.
 
 ### 2.2 Crear el usuario INTICRUNCH_ORACLE
 
-Desde la carpeta del backend:
-
 ```powershell
 cd "Backend Inti Crunch\infra\oracle"
-sqlplus / as sysdba "@crear-usuario.sql"
+Set-ExecutionPolicy -Scope Process Bypass
+.\crear-usuario.ps1
 ```
 
-Te pide la clave nueva de `INTICRUNCH_ORACLE`. Esa es la clave que escribirás al iniciar el backend.
+Muestra `Base de trabajo de Oracle: XEPDB1` (o `FREEPDB1`) y te pide la clave nueva de `INTICRUNCH_ORACLE`.
+Esa es la clave que escribirás al iniciar el backend.
 
 ### 2.3 Cargar los datos (vienen en el repositorio)
 
@@ -75,7 +83,7 @@ No pide clave (entra como administrador de Windows). Termina con `completed with
 ese único error es `ORA-31684 ... already exists` (el usuario ya lo creaste) y es normal.
 
 > **Base vacía (opcional):** si prefieres empezar sin datos, en lugar de `importar-datos.ps1` ejecuta
-> `sqlplus INTICRUNCH_ORACLE@localhost:1521/XEPDB1 "@esquema.sql"` y al terminar escribe `EXIT`.
+> `sqlplus INTICRUNCH_ORACLE@localhost:1521/XEPDB1 "@esquema.sql"` (con Oracle Free usa `FREEPDB1` en vez de `XEPDB1`) y al terminar escribe `EXIT`.
 
 ### 2.4 Actualizar los datos del repositorio (en la PC original)
 
@@ -151,6 +159,7 @@ Abre **http://localhost:4200** (clientes) y **http://localhost:4200/gestion/resu
 | Mensaje | Qué significa | Qué hacer |
 |---|---|---|
 | `ORA-12514 ... XEPDB1 no está registrado` | Oracle no escucha esa base | Paso 2.1 |
+| `ORA-30094 failed to find the time zone data file` al importar | Tu Oracle no trae los archivos de zona horaria antiguos | Instala Oracle completo (no una versión recortada) o empieza con la base vacía (`esquema.sql`) |
 | `ORA-01017 usuario/contraseña no válidos` | Clave equivocada | Escríbela de nuevo (paso 2.2 si la olvidaste) |
 | `ORA-00942 la tabla o vista no existe` | No se cargaron las tablas | Paso 2.3 |
 | `Keycloak no responde en el puerto 8180` | Docker cerrado | Abre Docker Desktop y repite |

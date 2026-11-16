@@ -31,6 +31,14 @@ spring:
         type:
           # Los códigos UUID se guardan como texto VARCHAR2(36).
           preferred_uuid_jdbc_type: VARCHAR
+        # Las tablas usan el estilo de Oracle 21c (por ejemplo, sí/no como NUMBER(1)).
+        # Así funciona igual en Oracle XE 21c y en Oracle Free 23ai/26ai.
+        boot:
+          allow_jdbc_metadata_access: false
+      jakarta:
+        persistence:
+          database-product-name: Oracle
+          database-major-version: 21
 
   # Keycloak: quien inicia sesión recibe un token; el backend lo verifica aquí.
   security:
